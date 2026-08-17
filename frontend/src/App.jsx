@@ -4,7 +4,7 @@ import { getUserPageData, requestPasswordReset, resetPassword } from './api/User
 import { AdminDashboard } from './pages/Admindashboard'
 import { StaffDashboard } from './pages/Staffdashboard'
 import './App.css'
-
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5275'
 axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('ACCESS_TOKEN')
