@@ -79,13 +79,13 @@
     min-width: min(88vw, 320px) !important;
     padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
     gap: 8px;
+    overflow: hidden;
     overscroll-behavior: contain;
     box-shadow: 12px 0 36px rgba(15, 23, 42, 0.2);
   }
 
   .sd-left-nav-user {
-    position: sticky;
-    top: 0;
+    position: static;
     z-index: 2;
     min-height: 64px;
     margin: 0;
@@ -114,8 +114,13 @@
   }
 
   .sd-left-nav-items {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     gap: 6px !important;
-    padding: 4px 0;
+    padding: 4px 0 8px;
+    scrollbar-width: thin;
   }
 
   .sd-left-nav-item {
@@ -135,9 +140,10 @@
   }
 
   .sd-left-nav-logout {
-    position: sticky;
-    bottom: 0;
+    position: static;
+    flex: 0 0 auto;
     min-height: 48px;
+    margin-top: 8px;
     padding: 12px 14px;
     border-color: #fecaca;
     border-radius: 12px;
@@ -502,6 +508,7 @@
 
   .sd-branch-salary-summary-table .sd-branch-salary-summary-row {
     display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     width: 100%;
     min-width: 100% !important;
     max-width: none !important;
