@@ -201,6 +201,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+app.MapHealthChecks("/health");
 
 // ==============================
 // KIỂM TRA KẾT NỐI DATABASE
@@ -272,7 +273,6 @@ app.UseCors("AllowReactDev");
 // Authentication luôn đứng trước Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
