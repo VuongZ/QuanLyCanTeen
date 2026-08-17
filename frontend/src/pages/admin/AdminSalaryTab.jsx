@@ -619,12 +619,12 @@ export function AdminSalaryTab({ isAdmin = true }) {
               <tbody>
                 {visibleBranchSummaries.length === 0 ? <tr><td colSpan={6} className="sd-td-empty">Chưa có dữ liệu lương theo bộ lọc đã chọn.</td></tr> : visibleBranchSummaries.map((item) => (
                   <tr className="sd-tr sd-branch-salary-summary-row" key={`${item.branchId}-${periodKey(item)}`} role="button" tabIndex={0} onClick={() => { setSelectedBranch(String(item.branchId)); setSelectedPeriod(periodKey(item)); setShowEmployeeList(true); }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedBranch(String(item.branchId)); setSelectedPeriod(periodKey(item)); setShowEmployeeList(true); } }}>
-                    <td><strong>{item.branchName || 'Chưa gán cơ sở'}</strong></td>
-                    <td>{item.month}/{item.year}</td>
-                    <td>{item.employeeCount}</td>
-                    <td>{money(item.totalSalary)}</td>
-                    <td>{money(item.totalNetSalary)}</td>
-                    <td>{item.pendingComplaintCount > 0 ? <span className="sd-status-pill pending">{item.pendingComplaintCount} chờ phản hồi</span> : <span className="sd-status-pill approved">Đã xử lý</span>}</td>
+                    <td data-label="Cơ sở"><strong>{item.branchName || 'Chưa gán cơ sở'}</strong></td>
+                    <td data-label="Kỳ lương">{item.month}/{item.year}</td>
+                    <td data-label="Nhân viên">{item.employeeCount}</td>
+                    <td data-label="Tổng lương">{money(item.totalSalary)}</td>
+                    <td data-label="Thực nhận">{money(item.totalNetSalary)}</td>
+                    <td data-label="Khiếu nại">{item.pendingComplaintCount > 0 ? <span className="sd-status-pill pending">{item.pendingComplaintCount} chờ phản hồi</span> : <span className="sd-status-pill approved">Đã xử lý</span>}</td>
                   </tr>
                 ))}
               </tbody>
