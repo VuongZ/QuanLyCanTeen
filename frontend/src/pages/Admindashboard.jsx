@@ -258,22 +258,13 @@ export function AdminDashboard({ onLogout, onUserUpdated, roles, user, users: in
     switch (activeTab) {
       case 'overview': return { eyebrow: 'Hệ thống', title: 'Tổng quan' }
       case 'users': return { eyebrow: 'Quản lý', title: selectedUser ? 'Hồ sơ nhân viên' : 'Nhân sự' }
-      case 'account': return { eyebrow: 'Cài đặt', title: 'Tài khoản' }
       case 'branches': return { eyebrow: 'Hệ thống', title: 'Quản lý Cơ sở' }
       case 'periods': return { eyebrow: 'Lịch trình', title: 'Đợt đăng ký ca' }
-      case 'scanQr': return { eyebrow: 'Chấm công', title: 'Quét QR nhân viên' }
-      case 'supplementalAttendance': return { eyebrow: 'Chấm công', title: isAdmin ? 'Duyệt chấm công bổ sung' : 'Chấm công bổ sung' }
-      case 'forgotCheckout': return { eyebrow: 'Chấm công', title: 'Xử lý quên checkout' }
-      case 'shiftDelegation': return { eyebrow: 'Phân quyền', title: 'Ủy quyền trưởng ca' }
       case 'salaryRules': return isAdmin
         ? { eyebrow: 'Lương', title: 'Quy Tắc Lương theo cơ sở' }
         : { eyebrow: 'Lương', title: 'Thưởng phạt nhân viên' }
       case 'systemSchedule': return { eyebrow: 'Giám sát', title: 'Lịch làm các cơ sở' }
       case 'inventory': return { eyebrow: "Kho hàng", title: 'Nhập kho hàng hóa' }
-      case 'inventoryReport': return isAdmin
-        ? { eyebrow: 'Báo cáo kho', title: 'Tồn kho toàn hệ thống' }
-        : { eyebrow: 'Báo cáo kho', title: 'Tồn kho cơ sở' }
-      case 'suppliers': return { eyebrow: 'Quản trị', title: 'Nhà cung cấp & Sản phẩm' }
       case 'salaries': return isAdmin
         ? { eyebrow: 'Tài chính', title: 'Tổng lương theo cơ sở' }
         : { eyebrow: 'Tài chính', title: 'Trả lương nhân viên' }
@@ -282,15 +273,7 @@ export function AdminDashboard({ onLogout, onUserUpdated, roles, user, users: in
     title: 'Bảo hiểm xã hội'
   };
 
-      case 'frontStock':
-        return isAdmin
-          ? { eyebrow: 'Tồn quầy', title: 'Tồn quầy toàn hệ thống' }
-          : { eyebrow: 'Tồn quầy', title: 'Tồn quầy cơ sở' };
-
           case 'shiftClosingReports':
-  return isAdmin
-    ? { eyebrow: 'Báo cáo kết ca', title: 'Báo cáo kết ca toàn hệ thống' }
-    : { eyebrow: 'Báo cáo kết ca', title: 'Báo cáo kết ca cơ sở' };
       default: return { eyebrow: '', title: '' }
     }
   }
