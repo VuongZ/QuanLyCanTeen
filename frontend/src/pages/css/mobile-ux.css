@@ -1,0 +1,329 @@
+/* Mobile-first usability overrides shared by the admin and staff dashboards. */
+.sd-menu-close {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 320px;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  .sd-root--left-nav {
+    min-height: 100dvh;
+    height: 100dvh;
+    background: #f8fafc;
+  }
+
+  .sd-topbar {
+    min-height: calc(60px + env(safe-area-inset-top));
+    padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .sd-hamburger {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: 2px;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: 23px;
+    line-height: 1;
+  }
+
+  .sd-hamburger:focus-visible,
+  .sd-menu-close:focus-visible,
+  .sd-left-nav-item:focus-visible,
+  .sd-left-nav-logout:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.28);
+    outline-offset: 2px;
+  }
+
+  .sd-brand {
+    min-width: 0;
+  }
+
+  .sd-brand-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .sd-brand-name {
+    font-size: 15px;
+  }
+
+  .sd-topbar > .sd-flex-center .sd-branch-badge {
+    max-width: 116px;
+    margin-right: 0 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sd-left-nav {
+    left: min(-88vw, -320px);
+    width: min(88vw, 320px) !important;
+    min-width: min(88vw, 320px) !important;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+    gap: 8px;
+    overscroll-behavior: contain;
+    box-shadow: 12px 0 36px rgba(15, 23, 42, 0.2);
+  }
+
+  .sd-left-nav-user {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    min-height: 64px;
+    margin: 0;
+    padding: 8px 4px 12px;
+    background: #f8fafc;
+  }
+
+  .sd-left-nav-name {
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .sd-menu-close {
+    display: grid;
+    flex: 0 0 44px;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    color: #475569;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .sd-left-nav-items {
+    gap: 6px !important;
+    padding: 4px 0;
+  }
+
+  .sd-left-nav-item {
+    min-height: 48px;
+    padding: 11px 12px;
+    border-radius: 12px;
+  }
+
+  .sd-left-nav-item .sd-nav-icon {
+    width: 24px;
+    font-size: 18px;
+  }
+
+  .sd-left-nav-item .sd-nav-label {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .sd-left-nav-logout {
+    position: sticky;
+    bottom: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-color: #fecaca;
+    border-radius: 12px;
+    background: #fff;
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .sd-menu-overlay {
+    background: rgba(15, 23, 42, 0.54);
+  }
+
+  .sd-root--left-nav .sd-main {
+    min-width: 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    overscroll-behavior-y: contain;
+  }
+
+  .sd-page-header {
+    width: 100%;
+    min-width: 0;
+    padding: 16px 14px 10px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .sd-page-header > div:first-child {
+    min-width: 0;
+  }
+
+  .sd-page-header h1 {
+    font-size: clamp(19px, 5.4vw, 23px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .sd-eyebrow {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .sd-page-header > .sd-branch-badge {
+    max-width: 42%;
+    padding: 6px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sd-content {
+    width: 100%;
+    min-width: 0;
+    padding: 0 12px 20px;
+  }
+
+  .sd-card {
+    min-width: 0;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid #e8edf2;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .sd-card-header {
+    margin-bottom: 12px;
+  }
+
+  .sd-card-header h2 {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .sd-content input:not([type="checkbox"]):not([type="radio"]),
+  .sd-content select,
+  .sd-content textarea,
+  .sd-modal input:not([type="checkbox"]):not([type="radio"]),
+  .sd-modal select,
+  .sd-modal textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  .sd-content button,
+  .sd-modal button {
+    min-height: 44px;
+  }
+
+  .sd-users-toolbar-right,
+  .sd-detail-actions,
+  .sd-form-actions {
+    gap: 8px !important;
+  }
+
+  .sd-users-toolbar-right,
+  .sd-detail-actions {
+    flex-wrap: wrap;
+  }
+
+  .sd-btn-add,
+  .sd-detail-actions > button {
+    min-height: 44px;
+  }
+
+  .sd-table-wrap,
+  [class*="table-wrap"] {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .sd-overlay {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .sd-modal {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .sd-modal-header {
+    min-height: calc(60px + env(safe-area-inset-top));
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  }
+
+  .sd-modal-header button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 12px;
+    background: #f1f5f9;
+  }
+
+  .sd-modal-body {
+    padding: 16px;
+  }
+
+  .sd-modal-footer {
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  .sd-modal-footer > button {
+    flex: 1;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 380px) {
+  .sd-brand-name {
+    display: none;
+  }
+
+  .sd-page-header {
+    flex-direction: column;
+  }
+
+  .sd-page-header > .sd-branch-badge {
+    max-width: 100%;
+  }
+
+  .sd-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .sd-modal-footer > button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-left-nav,
+  .sd-modal,
+  .sd-overlay,
+  .sd-card,
+  .sd-left-nav-item {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

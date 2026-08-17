@@ -3,6 +3,7 @@ import axios from 'axios'
 import { getDeletedUserPageData, restoreUser, updateUser } from '../api/UserApi'
 import { getAllBranches } from '../api/BranchApi'
 import './css/admindashboard.css'
+import './css/mobile-ux.css'
 
 
 // 1. IMPORT CÁC COMPONENT ĐÃ ĐƯỢC CHIA TÁCH
@@ -319,7 +320,16 @@ export function AdminDashboard({ onLogout, onUserUpdated, roles, user, users: in
       {/* ── HEADER ── */}
       <header className="sd-topbar">
         <div className="sd-brand">
-          <button className="sd-hamburger" onClick={() => setIsMenuOpen(true)}>☰</button>
+          <button
+            aria-controls="admin-mobile-navigation"
+            aria-expanded={isMenuOpen}
+            aria-label="Mở menu điều hướng"
+            className="sd-hamburger"
+            onClick={() => setIsMenuOpen(true)}
+            type="button"
+          >
+            ☰
+          </button>
           <span className="sd-brand-icon">CT</span>
           <span className="sd-brand-name">Canteen</span>
         </div>
@@ -333,10 +343,22 @@ export function AdminDashboard({ onLogout, onUserUpdated, roles, user, users: in
         {isMenuOpen && <div className="sd-menu-overlay" onClick={() => setIsMenuOpen(false)}></div>}
 
         {/* ── SIDEBAR MENU ── */}
-        <nav className={`sd-left-nav ${isMenuOpen ? 'open' : ''}`}>
+        <nav
+          aria-label="Điều hướng chính"
+          className={`sd-left-nav ${isMenuOpen ? 'open' : ''}`}
+          id="admin-mobile-navigation"
+        >
           <div className="sd-left-nav-user">
             <div className="sd-info-avatar sd-avatar-sm">{getInitials(user.fullName || user.username)}</div>
             <span className="sd-left-nav-name">{user.fullName || user.username}</span>
+            <button
+              aria-label="Đóng menu điều hướng"
+              className="sd-menu-close"
+              onClick={() => setIsMenuOpen(false)}
+              type="button"
+            >
+              ✕
+            </button>
           </div>
           <div className="sd-left-nav-items">
             {NAV_ITEMS.map((item) => (
@@ -363,7 +385,7 @@ export function AdminDashboard({ onLogout, onUserUpdated, roles, user, users: in
             </div>
           </div>
 
-          <div className="sd-c    ontent">
+          <div className="sd-content">
             {/* THỐNG KÊ (Giữ lại trong file chính vì liên kết với user data trực tiếp) */}
             {activeTab === 'overview' && isAdmin && (
               <div className="sd-profile-layout">

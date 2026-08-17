@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import './css/dashboard.css';
+import './css/mobile-ux.css';
 
 import { InventoryTab } from './shared/InventoryTab';
 import { UnifiedScheduleTab } from './staff/UnifiedScheduleTab';
@@ -207,6 +208,9 @@ export function StaffDashboard({
       <header className="sd-topbar">
         <div className="sd-brand">
           <button
+            aria-controls="staff-mobile-navigation"
+            aria-expanded={isMenuOpen}
+            aria-label="Mở menu điều hướng"
             className="sd-hamburger"
             onClick={
               () => setIsMenuOpen(true)
@@ -246,6 +250,7 @@ export function StaffDashboard({
         )}
 
         <nav
+          aria-label="Điều hướng chính"
           className={
             `sd-left-nav ${
               isMenuOpen
@@ -253,6 +258,7 @@ export function StaffDashboard({
                 : ''
             }`
           }
+          id="staff-mobile-navigation"
         >
           <div className="sd-left-nav-user">
             <div className="sd-info-avatar sd-avatar-sm">
@@ -266,6 +272,15 @@ export function StaffDashboard({
               {user.fullName ||
                 user.username}
             </span>
+
+            <button
+              aria-label="Đóng menu điều hướng"
+              className="sd-menu-close"
+              onClick={() => setIsMenuOpen(false)}
+              type="button"
+            >
+              ✕
+            </button>
           </div>
 
           <div className="sd-left-nav-items">
