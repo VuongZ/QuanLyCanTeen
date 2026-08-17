@@ -1,0 +1,451 @@
+﻿using LuanVanTotNghiep.backend.Models.Entities;
+using LuanVanTotNghiep.DTOs;
+using LuanVanTotNghiep.Repositories;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+
+namespace LuanVanTotNghiep.Services;
+
+public class UserService(UserRepo userRepo, AppDbContext context, EmailService emailService)
+{
+    public async Task<IEnumerable<NsUser>> GetAllUser()
+    {
+        return await userRepo.GetAll();
+    }
+
+    public async Task<NsUser?> GettUserbyId(int id)
+    {
+        var user = await userRepo.GetbyId(id);
+        if (user == null) return null;
+        return user;
+    }
+    public async Task<IEnumerable<NsUser>> GetDaXoa()
+    {
+        return await userRepo.GetDaXoa();
+    }
+
+    public async Task<NsUser> AddUser(UserDto dto)
+    {
+        var email = Normalize(dto.Email);
+        if (string.IsNullOrWhiteSpace(email) || !MailAddress.TryCreate(email, out _))
+            throw new ArgumentException("Vui lòng nhập email hợp lệ để gửi mật khẩu cho nhân viên.");
+
+        var phoneNumber = Normalize(dto.PhoneNumber ?? dto.Phone);
+        if (!string.IsNullOrWhiteSpace(phoneNumber) &&
+            !Regex.IsMatch(phoneNumber, @"^\d{10}$"))
+        {
+            throw new ArgumentException(
+                "Số điện thoại phải gồm đúng 10 chữ số.");
+        }
+
+        var normalizedEmail = email.ToLowerInvariant();
+        var duplicateMessages = new List<string>();
+
+        if (await context.NsUsers.AnyAsync(user =>
+            user.Email != null &&
+            user.Email.ToLower() == normalizedEmail))
+        {
+            duplicateMessages.Add("Email đã được sử dụng bởi tài khoản khác.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneNumber) &&
+            await context.NsUsers.AnyAsync(user => user.PhoneNumber == phoneNumber))
+        {
+            duplicateMessages.Add("Số điện thoại đã được sử dụng bởi tài khoản khác.");
+        }
+
+        if (duplicateMessages.Count > 0)
+            throw new ArgumentException(string.Join(" ", duplicateMessages));
+
+        await EnsureBranchCanBeAssignedAsync(dto.BranchId);
+
+        var initialPassword = GenerateSixDigitPassword();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        var user = new NsUser
+        {
+            Email = email,
+            FullName = dto.FullName,
+            PhoneNumber = phoneNumber,
+            Password = HashPassword(initialPassword),
+            BranchId = dto.BranchId,
+            RoleId = dto.RoleId,
+            HireDate = dto.HireDate,
+            EmploymentType = SalaryWagePolicy.NormalizeEmploymentType(dto.EmploymentType),
+            SalaryCoefficient = SalaryWagePolicy.GetSalaryCoefficient(
+                dto.HireDate,
+                DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)),
+                dto.EmploymentType),
+            SalaryCoefficientIsManual = false
+        };
+
+        await userRepo.Add(user);
+        await UpsertBankAccountAsync(
+            user.Id,
+            dto.BankName,
+            dto.BankAccountNumber,
+            dto.BankAccountName);
+
+        try
+        {
+            await emailService.SendInitialPasswordEmailAsync(
+                email,
+                user.FullName,
+                initialPassword);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                "Không thể gửi mật khẩu tới email nhân viên. Tài khoản chưa được tạo.",
+                ex);
+        }
+
+        await transaction.CommitAsync();
+        return user;
+    }
+
+    public async Task UpdateUser(UserDto user)
+    {
+        var us1 = await userRepo.GetbyId(user.Id);
+        if (us1 != null)
+        {
+            var oldEmploymentType =
+                SalaryWagePolicy.NormalizeEmploymentType(
+                    us1.EmploymentType);
+
+            var newEmploymentType =
+                SalaryWagePolicy.NormalizeEmploymentType(
+                    user.EmploymentType);
+
+            var employmentTypeChanged =
+                oldEmploymentType != newEmploymentType;
+
+            if (!string.IsNullOrWhiteSpace(user.Password))
+                us1.Password = HashPassword(user.Password);
+            us1.Email = Normalize(user.Email);
+            us1.FullName = user.FullName;
+            us1.PhoneNumber = Normalize(user.PhoneNumber ?? user.Phone);
+
+            if (user.BranchId != us1.BranchId)
+            {
+                await EnsureBranchCanBeAssignedAsync(user.BranchId);
+            }
+
+            us1.BranchId = user.BranchId;
+            us1.RoleId = user.RoleId;
+            us1.HireDate = user.HireDate;
+            us1.EmploymentType = newEmploymentType;
+
+            // Khi đổi loại lao động phải trở về hệ số tự động của loại mới.
+            // Không giữ hệ số thủ công/cũ do frontend gửi lên.
+            if (!employmentTypeChanged && user.SalaryCoefficientIsManual)
+            {
+                if (user.SalaryCoefficient <= 0 || user.SalaryCoefficient > 999.99m)
+                    throw new ArgumentException("Hệ số lương phải từ 0,01 đến 999,99.");
+
+                us1.SalaryCoefficient = user.SalaryCoefficient;
+                us1.SalaryCoefficientIsManual = true;
+            }
+            else
+            {
+                us1.SalaryCoefficient = SalaryWagePolicy.GetSalaryCoefficient(
+                    user.HireDate,
+                    DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)),
+                    us1.EmploymentType);
+                us1.SalaryCoefficientIsManual = false;
+            }
+            await userRepo.Update(us1);
+
+            await SynchronizeCurrentPendingSalaryAsync(
+                us1);
+
+            await UpsertBankAccountAsync(us1.Id, user.BankName, user.BankAccountNumber, user.BankAccountName);
+        }
+    }
+
+    private async Task SynchronizeCurrentPendingSalaryAsync(
+        NsUser user)
+    {
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow.AddHours(7));
+
+        var salary =
+            await context.LuongMonthlySalaries
+                .FirstOrDefaultAsync(item =>
+                    item.UserId == user.Id &&
+                    item.Month == today.Month &&
+                    item.Year == today.Year &&
+                    (item.Status == null ||
+                     item.Status.ToUpper() == "PENDING"));
+
+        if (salary == null)
+        {
+            return;
+        }
+
+        var completedAttendances =
+            await context.CaAttendances
+                .AsNoTracking()
+                .Include(attendance => attendance.Schedule)
+                    .ThenInclude(schedule => schedule.Shift)
+                .Where(attendance =>
+                    attendance.Schedule.UserId == user.Id &&
+                    attendance.Schedule.WorkDate.Month == today.Month &&
+                    attendance.Schedule.WorkDate.Year == today.Year &&
+                    attendance.CheckInTime != null &&
+                    attendance.CheckOutTime != null &&
+                    attendance.Status != CheckoutRequestService.AutoCheckoutPending)
+                .ToListAsync();
+
+        salary.TotalHours = completedAttendances.Sum(attendance =>
+            AttendanceWorkHourPolicy.CalculateCreditedHours(
+                user,
+                attendance.Schedule,
+                attendance.CheckInTime!.Value,
+                attendance.CheckOutTime!.Value));
+
+        var baseHourlyWage =
+            await context.NsRoles
+                .Where(role =>
+                    role.Id == user.RoleId)
+                .Select(role =>
+                    role.HourlyWage)
+                .FirstOrDefaultAsync() ?? 0m;
+
+        salary.HourlyWageAtTime =
+            baseHourlyWage * user.SalaryCoefficient;
+
+        salary.TotalSalary =
+            salary.TotalHours * salary.HourlyWageAtTime +
+            (salary.TotalBonus ?? 0) -
+            (salary.TotalPenalty ?? 0);
+
+        if (!SalaryWagePolicy.IsSocialInsuranceEligible(user.EmploymentType))
+        {
+            salary.BhxhContributionId = null;
+            salary.SocialInsuranceDeduction = 0;
+        }
+        else
+        {
+            var contribution =
+                await context.BhxhMonthlyContributions
+                    .AsNoTracking()
+                    .Where(item =>
+                        item.UserId == user.Id &&
+                        item.Month == today.Month &&
+                        item.Year == today.Year &&
+                        (item.Status.ToUpper() == "CONFIRMED" ||
+                         item.Status.ToUpper() == "PAID"))
+                    .OrderByDescending(item =>
+                        item.Status.ToUpper() == "PAID")
+                    .ThenByDescending(item =>
+                        item.Id)
+                    .FirstOrDefaultAsync();
+
+            salary.BhxhContributionId =
+                contribution?.Id;
+
+            salary.SocialInsuranceDeduction =
+                contribution?.EmployeeAmount ?? 0;
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteUser(int id)
+    {
+        var us1 = await userRepo.GetbyId(id);
+        if (us1 != null)
+        {
+            await userRepo.SoftDelete(id);
+        }
+    }
+
+    public async Task<bool> RestoreUser(int id)
+    {
+        return await userRepo.Restore(id);
+    }
+
+    public async Task<(bool Success, string Message)> ChangePasswordAsync(int id, string currentPassword, string newPassword, string otp)
+    {
+        var user = await userRepo.GetbyId(id);
+        if (user == null)
+            return (false, "Không tìm thấy người dùng.");
+
+        if (!VerifyPassword(currentPassword, user.Password))
+            return (false, "Mật khẩu hiện tại không đúng.");
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
+            return (false, "Mật khẩu mới cần tối thiểu 4 ký tự.");
+
+        if (!IsValidOtp(user, otp))
+            return (false, "Mã OTP không đúng hoặc đã hết hạn.");
+
+        user.Password = HashPassword(newPassword);
+        user.ResetPasswordCode = null;
+        user.ResetPasswordExpiry = null;
+        await userRepo.Update(user);
+        return (true, "Đã cập nhật mật khẩu thành công.");
+    }
+
+    public async Task<(bool Success, string Message)> SendChangePasswordOtpAsync(int id)
+    {
+        var user = await userRepo.GetbyId(id);
+        if (user == null)
+            return (false, "Không tìm thấy người dùng.");
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+            return (false, "Tài khoản chưa có email để gửi OTP. Vui lòng cập nhật email trước.");
+
+        await SendOtpAsync(user);
+        return (true, "Đã gửi mã OTP về email.");
+    }
+
+    public async Task<(bool Success, string Message)> SendPasswordResetOtpAsync(string identifier)
+    {
+        var user = await FindByIdentifierAsync(identifier);
+        if (user == null || string.IsNullOrWhiteSpace(user.Email))
+            return (false, "Không tìm thấy tài khoản có email để gửi OTP. Vui lòng kiểm tra email/SĐT hoặc cập nhật email cho nhân viên.");
+
+        await SendOtpAsync(user);
+
+        return (true, "Đã gửi mã OTP về email.");
+    }
+
+    public async Task<(bool Success, string Message)> ResetPasswordWithOtpAsync(string identifier, string otp, string newPassword)
+    {
+        var user = await FindByIdentifierAsync(identifier);
+        if (user == null)
+            return (false, "Tài khoản hoặc email không tồn tại.");
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
+            return (false, "Mật khẩu mới cần tối thiểu 4 ký tự.");
+
+        if (!IsValidOtp(user, otp))
+            return (false, "Mã OTP không đúng hoặc đã hết hạn.");
+
+        user.Password = HashPassword(newPassword);
+        user.ResetPasswordCode = null;
+        user.ResetPasswordExpiry = null;
+
+        await context.SaveChangesAsync();
+        return (true, "Đã đặt lại mật khẩu thành công.");
+    }
+
+    public static string HashPassword(string plainPassword)
+    {
+        return global::BCrypt.Net.BCrypt.HashPassword(plainPassword);
+    }
+
+    public static bool VerifyPassword(string plainPassword, string storedPassword)
+    {
+        if (string.IsNullOrEmpty(storedPassword))
+            return false;
+
+        if (IsBCryptHash(storedPassword))
+            return global::BCrypt.Net.BCrypt.Verify(plainPassword, storedPassword);
+
+        return storedPassword == plainPassword;
+    }
+
+    public static bool IsBCryptHash(string password)
+    {
+        return password.StartsWith("$2a$") || password.StartsWith("$2b$") || password.StartsWith("$2y$");
+    }
+
+    public async Task<NsUser?> FindByIdentifierAsync(string identifier)
+    {
+        var normalized = Normalize(identifier) ?? "";
+        var normalizedEmail = normalized.ToLowerInvariant();
+        var normalizedPhone = NormalizePhone(normalized);
+        var users = await context.NsUsers
+            .Where(u => u.IsDeleted != true && (u.Email != null || u.PhoneNumber != null))
+            .ToListAsync();
+
+        return users.FirstOrDefault(u =>
+            string.Equals(Normalize(u.Email)?.ToLowerInvariant(), normalizedEmail, StringComparison.Ordinal) ||
+            NormalizePhone(Normalize(u.PhoneNumber) ?? "") == normalizedPhone);
+    }
+
+    private async Task UpsertBankAccountAsync(int userId, string? bankName, string? bankAccountNumber, string? bankAccountName)
+    {
+        var bank = await context.NsUserBankAccounts.FirstOrDefaultAsync(b => b.UserId == userId);
+        var hasBankInfo = !string.IsNullOrWhiteSpace(bankName)
+            || !string.IsNullOrWhiteSpace(bankAccountNumber)
+            || !string.IsNullOrWhiteSpace(bankAccountName);
+
+        if (bank == null)
+        {
+            if (!hasBankInfo) return;
+            bank = new NsUserBankAccount { UserId = userId };
+            context.NsUserBankAccounts.Add(bank);
+        }
+
+        bank.BankName = Normalize(bankName);
+        bank.BankAccountNumber = Normalize(bankAccountNumber);
+        bank.BankAccountName = Normalize(bankAccountName);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task EnsureBranchCanBeAssignedAsync(int? branchId)
+    {
+        if (!branchId.HasValue || branchId.Value <= 0)
+        {
+            return;
+        }
+
+        var isActive = await context.DmBranches
+            .AsNoTracking()
+            .AnyAsync(branch =>
+                branch.Id == branchId.Value &&
+                branch.IsActive);
+
+        if (!isActive)
+        {
+            throw new InvalidOperationException(
+                "Không thể phân công nhân viên vào cơ sở đã ngừng hoạt động.");
+        }
+    }
+
+    private static string? Normalize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string NormalizePhone(string value)
+    {
+        return value.Replace(" ", "").Replace("-", "").Replace(".", "").Replace("(", "").Replace(")", "");
+    }
+
+    private static string GenerateOtp()
+    {
+        return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+    }
+
+    private static string GenerateSixDigitPassword()
+    {
+        return RandomNumberGenerator
+            .GetInt32(0, 1000000)
+            .ToString("D6");
+    }
+
+    private async Task SendOtpAsync(NsUser user)
+    {
+        var otp = GenerateOtp();
+        user.ResetPasswordCode = otp;
+        user.ResetPasswordExpiry = DateTime.UtcNow.AddMinutes(5);
+        await context.SaveChangesAsync();
+        await emailService.SendOtpEmailAsync(user.Email!, otp);
+    }
+
+    private static bool IsValidOtp(NsUser user, string otp)
+    {
+        return !string.IsNullOrWhiteSpace(user.ResetPasswordCode) &&
+            user.ResetPasswordExpiry != null &&
+            user.ResetPasswordExpiry >= DateTime.UtcNow &&
+            user.ResetPasswordCode == otp?.Trim();
+    }
+}
