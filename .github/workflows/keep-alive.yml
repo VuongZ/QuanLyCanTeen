@@ -1,0 +1,26 @@
+name: Keep Backend & DB Alive
+
+on:
+  schedule:
+    # Chạy mỗi 10 phút — dưới ngưỡng 15 phút sleep của Render free tier
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # cho phép bấm chạy tay để test
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          echo "Pinging backend at $(date -u)"
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 60 \
+            "${{ secrets.BACKEND_HEALTH_URL }}")
+
+          echo "Response code: $response"
+
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Backend & DB đều thức, response 200"
+          else
+            echo "⚠️ Response bất thường: $response (có thể đang cold start hoặc DB lỗi)"
+          fi
