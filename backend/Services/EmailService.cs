@@ -8,11 +8,12 @@ public class EmailService(IConfiguration configuration)
     public async Task SendOtpEmailAsync(string toEmail, string otp)
     {
         var fromName = configuration["Smtp:FromName"] ?? "Hệ Thống Quản Lý Nhân Viên";
-        using var client = CreateSmtpClient(out var smtpUser);
+        var fromAddress = GetFromAddress();
+        using var client = CreateSmtpClient();
 
         using var mail = new MailMessage
         {
-            From = new MailAddress(smtpUser, fromName),
+            From = new MailAddress(fromAddress, fromName),
             Subject = "Mã Xác Nhận Đặt Lại Mật Khẩu",
             Body = $"Mã OTP Của Bạn Là : {otp}\nMã có hiệu lực trong 5 phút.",
             IsBodyHtml = false
@@ -28,11 +29,12 @@ public class EmailService(IConfiguration configuration)
         string initialPassword)
     {
         var fromName = configuration["Smtp:FromName"] ?? "Hệ Thống Quản Lý Nhân Viên";
-        using var client = CreateSmtpClient(out var smtpUser);
+        var fromAddress = GetFromAddress();
+        using var client = CreateSmtpClient();
 
         using var mail = new MailMessage
         {
-            From = new MailAddress(smtpUser, fromName),
+            From = new MailAddress(fromAddress, fromName),
             Subject = "Tài khoản nhân viên đã được tạo",
             Body =
                 $"Xin chào {fullName ?? "bạn"},\n\n" +
@@ -56,11 +58,12 @@ public class EmailService(IConfiguration configuration)
     {
         var fromName = configuration["Smtp:FromName"]
             ?? "Hệ Thống Quản Lý Nhân Viên";
-        using var client = CreateSmtpClient(out var smtpUser);
+        var fromAddress = GetFromAddress();
+        using var client = CreateSmtpClient();
 
         using var mail = new MailMessage
         {
-            From = new MailAddress(smtpUser, fromName),
+            From = new MailAddress(fromAddress, fromName),
             Subject = $"Lịch làm việc mới tại {branchName}",
             Body =
                 $"Xin chào {fullName ?? "bạn"},\n\n" +
@@ -75,11 +78,18 @@ public class EmailService(IConfiguration configuration)
         await client.SendMailAsync(mail);
     }
 
-    private SmtpClient CreateSmtpClient(out string smtpUser)
+    private string GetFromAddress()
+    {
+        // Smtp:From là địa chỉ sender đã verify trên Brevo (dùng để hiển thị From).
+        // Nếu chưa set Smtp:From, fallback về Smtp:User (giữ tương thích ngược với Gmail cũ).
+        return configuration["Smtp:From"] ?? configuration["Smtp:User"] ?? string.Empty;
+    }
+
+    private SmtpClient CreateSmtpClient()
     {
         var smtpHost = configuration["Smtp:Host"];
         var smtpPort = int.Parse(configuration["Smtp:Port"] ?? "587");
-        smtpUser = configuration["Smtp:User"] ?? string.Empty;
+        var smtpUser = configuration["Smtp:User"];
         var smtpPass = configuration["Smtp:Password"];
 
         if (string.IsNullOrWhiteSpace(smtpHost) ||
