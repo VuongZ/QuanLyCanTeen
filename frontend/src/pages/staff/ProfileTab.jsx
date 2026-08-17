@@ -66,13 +66,14 @@ export function EmployeeQrCard({ user }) {
         <div>
           <p className="sd-eyebrow">Mã QR nhân viên</p>
           <h2>{user.fullName || user.username}</h2>
-          <dl className="sd-employee-qr-list">
-            <InfoRow label="Email/SĐT" value={user.email || user.phoneNumber || user.phone || '---'} />
-            <InfoRow label="Chức vụ" value={user.roleName || '---'} />
-            <InfoRow label="Chi nhánh" value={user.branchName || 'Chưa gán'} />
-          </dl>
         </div>
       </div>
+
+      <dl className="sd-employee-qr-list">
+        <InfoRow label="Email/SĐT" value={user.email || user.phoneNumber || user.phone || '---'} />
+        <InfoRow label="Chức vụ" value={user.roleName || '---'} />
+        <InfoRow label="Chi nhánh" value={user.branchName || 'Chưa gán'} />
+      </dl>
 
       <div className="sd-employee-qr-box">
         {qrUrl ? (

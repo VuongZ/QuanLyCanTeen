@@ -325,6 +325,11 @@
     overflow: visible;
   }
 
+  .sd-employee-qr-list {
+    order: 2;
+    width: 100%;
+  }
+
   .sd-employee-qr-info > .sd-info-avatar {
     width: 48px;
     height: 48px;
@@ -339,9 +344,10 @@
 
   .sd-employee-qr-list .sd-info-row {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: minmax(84px, 34%) minmax(0, 1fr);
     gap: 8px;
-    padding: 8px 0;
+    width: 100%;
+    padding: 10px 0;
   }
 
   .sd-employee-qr-list .sd-info-row dt {
@@ -358,6 +364,7 @@
   }
 
   .sd-employee-qr-box {
+    order: 3;
     width: 100%;
     gap: 10px;
   }
@@ -484,7 +491,9 @@
   .sd-branch-salary-summary-table tbody {
     display: block !important;
     width: 100%;
-    min-width: 0 !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    table-layout: auto !important;
   }
 
   .sd-branch-salary-summary-table thead {
@@ -494,6 +503,9 @@
   .sd-branch-salary-summary-table .sd-branch-salary-summary-row {
     display: grid !important;
     width: 100%;
+    min-width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
     margin-bottom: 10px;
     padding: 12px;
     gap: 0;
@@ -504,13 +516,15 @@
   }
 
   .sd-branch-salary-summary-table .sd-branch-salary-summary-row td {
-    display: grid !important;
-    grid-template-columns: minmax(88px, 38%) minmax(0, 1fr);
+    display: flex !important;
     align-items: center;
+    justify-content: space-between !important;
     width: 100% !important;
     min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box;
     padding: 8px 0 !important;
-    gap: 8px;
+    gap: 16px;
     border: 0 !important;
     border-bottom: 1px solid #f1f5f9 !important;
     text-align: right !important;
@@ -523,6 +537,8 @@
 
   .sd-branch-salary-summary-table .sd-branch-salary-summary-row td::before {
     content: attr(data-label);
+    flex: 0 0 38%;
+    min-width: 0;
     color: #64748b;
     font-size: 11px;
     font-weight: 600;
@@ -530,7 +546,7 @@
   }
 
   .sd-branch-salary-summary-table .sd-status-pill {
-    justify-self: end;
+    margin-left: auto;
     min-width: 0;
     white-space: normal;
   }
