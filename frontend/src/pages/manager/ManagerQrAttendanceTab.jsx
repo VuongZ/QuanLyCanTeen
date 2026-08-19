@@ -101,7 +101,14 @@ export function ManagerQrAttendanceTab({ delegatedShiftId, user }) {
     const scannerElement = document.getElementById('manager-qr-reader')
     if (scannerElement) scannerElement.innerHTML = ''
 
-    const scanner = new Html5QrcodeScanner('manager-qr-reader', { fps: 8, qrbox: { width: 240, height: 240 } }, false)
+    const scanner = new Html5QrcodeScanner(
+      'manager-qr-reader',
+      {
+        fps: 15,
+        qrbox: { width: 300, height: 300 }
+      },
+      false
+    )
     scannerRef.current = scanner
     scanner.render((decodedText) => {
       const scanKey = `${scanAction}|${shiftId}|${getVietnamDateString()}|${decodedText}`
@@ -199,11 +206,21 @@ setScanResult(result)
             <button className="sd-btn-primary" disabled={!shiftId} type="button" onClick={() => setIsScannerOpen(true)}>Mở camera quét QR</button>
           )}
         </div>
-        {isScannerOpen && <div id="manager-qr-reader" className="sd-qr-reader"></div>}
+        {isScannerOpen && (
+          <div
+            id="manager-qr-reader"
+            className="sd-qr-reader"
+            style={{
+              width: '100%',
+              maxWidth: '720px',
+              margin: '8px auto 16px'
+            }}
+          ></div>
+        )}
         <form className="sd-qr-manual" onSubmit={handleManualSubmit}>
           <div className="sd-field">
             <label>Nhập dữ liệu QR nếu không mở được camera</label>
-            <textarea value={manualQr} onChange={(e) => setManualQr(e.target.value)} placeholder='{"type":"EMPLOYEE","id":1,...}' />
+            <textarea value={manualQr} onChange={(e) => setManualQr(e.target.value)} placeholder='{"type":"EMPLOYEE","id":13}' />
           </div>
           <button className="sd-btn-primary" disabled={isSubmitting || !shiftId} type="submit">{isSubmitting ? 'Đang lưu...' : 'Lưu dữ liệu QR'}</button>
         </form>

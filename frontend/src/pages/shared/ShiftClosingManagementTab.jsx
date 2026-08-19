@@ -167,11 +167,6 @@ export function ShiftClosingManagementTab({
 
   const filteredReports = useMemo(() => {
     const searchText = keyword.trim().toLowerCase();
-    const statusPriority = {
-      PENDING: 0,
-      REJECTED: 1,
-      APPROVED: 2,
-    };
 
     return reports
       .filter((report) => {
@@ -185,16 +180,7 @@ export function ShiftClosingManagementTab({
           .toLowerCase()
           .includes(searchText);
       })
-      .sort((first, second) => {
-        const firstPriority = statusPriority[first.status] ?? 9;
-        const secondPriority = statusPriority[second.status] ?? 9;
-
-        if (firstPriority !== secondPriority) {
-          return firstPriority - secondPriority;
-        }
-
-        return second.id - first.id;
-      });
+      .sort((first, second) => second.id - first.id);
   }, [reports, keyword, statusFilter]);
 
   const totalPages = Math.max(
@@ -532,7 +518,7 @@ export function ShiftClosingManagementTab({
             <div>
               <h3>Danh sách báo cáo</h3>
               <span>
-                Báo cáo chờ duyệt được ưu tiên hiển thị trước.
+                Báo cáo mới nhất được hiển thị trước.
               </span>
             </div>
 
